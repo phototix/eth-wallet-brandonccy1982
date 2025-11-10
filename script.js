@@ -1,3 +1,7 @@
+if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+  location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Your Etherscan API configuration
     const ETHERSCAN_API_KEY = 'DH4XZHQQHAD78JEUKBMDGNVTXUB621UXNQ';
