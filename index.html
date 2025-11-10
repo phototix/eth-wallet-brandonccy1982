@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETH Balance Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .addresses-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .address-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            flex: 1;
+            min-width: 280px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .address-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .address-label {
+            font-size: 16px;
+            color: #495057;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .address {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .balance-container {
+            margin: 15px 0;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .balance {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+        
+        .eth-symbol {
+            color: #627eea;
+            font-size: 20px;
+            margin-right: 5px;
+        }
+        
+        .balance-usd {
+            font-size: 14px;
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .refresh-btn {
+            background-color: #627eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #4c68d7;
+        }
+        
+        .loading {
+            display: none;
+            margin: 10px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #627eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin: 10px 0;
+            display: none;
+            background-color: #ffeaea;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ffcdd2;
+            font-size: 12px;
+        }
+        
+        .info {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+            line-height: 1.4;
+        }
+        
+        .total-balance {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .total-label {
+            font-size: 18px;
+            color: #495057;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .total-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .api-status {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin: 10px 0;
+            display: inline-block;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ethereum Balance Checker</h1>
+        
+        <div class="api-status">
+            ✓ Using Etherscan API with your API key
+        </div>
+        
+        <div class="info">
+            Monitoring multiple Ethereum addresses with reliable API access
+        </div>
+        
+        <div class="addresses-container">
+            <!-- Address 1 Card -->
+            <div class="address-card" id="address-card-1">
+                <div class="address-label">Brandonccy1982</div>
+                <div class="address">
+                    0x88fb219E59E6E94640506ae635700135a5B1C1ba
+                </div>
+                
+                <div class="balance-container">
+                    <div class="balance-label">ETH Balance:</div>
+                    <div class="balance">
+                        <span class="eth-symbol">Ξ</span>
+                        <span id="balance-1">--</span>
+                    </div>
+                    <div class="balance-usd" id="usd-value-1">--</div>
+                </div>
+                
+                <div class="loading" id="loading-1">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+                
+                <div class="error" id="error-1">
+                    Error fetching balance
+                </div>
+            </div>
+            
+            <!-- Address 2 Card -->
+            <div class="address-card" id="address-card-2" style="display: none;">
+                <div class="address-label">Address 2</div>
+                <div class="address">
+                    0x47666Fab8bd0Ac7003bce3f5C3585383F09486E2
+                </div>
+                
+                <div class="balance-container">
+                    <div class="balance-label">ETH Balance:</div>
+                    <div class="balance">
+                        <span class="eth-symbol">Ξ</span>
+                        <span id="balance-2">--</span>
+                    </div>
+                    <div class="balance-usd" id="usd-value-2">--</div>
+                </div>
+                
+                <div class="loading" id="loading-2">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+                
+                <div class="error" id="error-2">
+                    Error fetching balance
+                </div>
+            </div>
+        </div>
+        
+        <div class="total-balance">
+            <div class="total-label">Total ETH Balance</div>
+            <div class="total-amount">
+                <span class="eth-symbol">Ξ</span>
+                <span id="total-balance">--</span>
+            </div>
+            <div class="balance-usd" id="total-usd-value">--</div>
+        </div>
+        
+        <button class="refresh-btn" id="refresh-btn">Refresh All Balances</button>
+        
+        <div class="footer">
+            Data provided by Etherscan API with authenticated access
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Your Etherscan API configuration
+            const ETHERSCAN_API_KEY = 'DH4XZHQQHAD78JEUKBMDGNVTXUB621UXNQ';
+            const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/v2/api';
+            
+            const addresses = [
+                {
+                    id: 1,
+                    address: '0x88fb219E59E6E94640506ae635700135a5B1C1ba',
+                    balanceElement: document.getElementById('balance-1'),
+                    usdElement: document.getElementById('usd-value-1'),
+                    loadingElement: document.getElementById('loading-1'),
+                    errorElement: document.getElementById('error-1')
+                }
+            ];
+            
+            const totalBalanceElement = document.getElementById('total-balance');
+            const totalUsdElement = document.getElementById('total-usd-value');
+            const refreshButton = document.getElementById('refresh-btn');
+            
+            let ethPrice = 0;
+            
+            // Function to fetch all balances
+            async function fetchAllBalances() {
+                // Reset UI
+                addresses.forEach(addr => {
+                    addr.loadingElement.style.display = 'block';
+                    addr.errorElement.style.display = 'none';
+                    addr.balanceElement.textContent = '--';
+                    addr.usdElement.textContent = '--';
+                });
+                
+                totalBalanceElement.textContent = '--';
+                totalUsdElement.textContent = '--';
+                
+                try {
+                    // Fetch ETH price first
+                    ethPrice = await fetchETHPrice();
+                    
+                    // Fetch balances for all addresses
+                    const balancePromises = addresses.map(addr => fetchBalance(addr));
+                    await Promise.all(balancePromises);
+                    
+                    // Calculate and display totals
+                    calculateTotals();
+                    
+                } catch (error) {
+                    console.error('Error in fetchAllBalances:', error);
+                }
+            }
+            
+            // Function to fetch balance for a single address using Etherscan API
+            async function fetchBalance(addressObj) {
+                try {
+                    const balanceEth = await fetchFromEtherscan(addressObj.address);
+                    
+                    if (balanceEth !== null) {
+                        // Display balance
+                        addressObj.balanceElement.textContent = balanceEth.toFixed(6);
+                        
+                        // Calculate and display USD value
+                        const usdValue = balanceEth * ethPrice;
+                        addressObj.usdElement.textContent = `$${usdValue.toFixed(2)} USD`;
+                        
+                        // Store the balance for total calculation
+                        addressObj.currentBalance = balanceEth;
+                    } else {
+                        throw new Error(`Failed to fetch balance for address ${addressObj.id}`);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching balance for address ${addressObj.id}:`, error);
+                    addressObj.errorElement.textContent = 'Error fetching balance. Please try again.';
+                    addressObj.errorElement.style.display = 'block';
+                    addressObj.currentBalance = 0;
+                } finally {
+                    addressObj.loadingElement.style.display = 'none';
+                }
+            }
+            
+            // Fetch balance using your Etherscan API key
+            async function fetchFromEtherscan(address) {
+                try {
+                    const url = `${ETHERSCAN_BASE_URL}?apikey=${ETHERSCAN_API_KEY}&chainid=1&module=account&action=balance&address=${address}&tag=latest`;
+                    
+                    console.log(`Fetching balance for ${address}...`);
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Check if the API returned a successful response
+                    if (data.status === '1' && data.message === 'OK') {
+                        const balanceWei = data.result;
+                        const balanceEth = balanceWei / 1e18;
+                        console.log(`Balance for ${address}: ${balanceEth} ETH`);
+                        return balanceEth;
+                    } else {
+                        console.warn(`Etherscan API error for ${address}:`, data.message, data.result);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error(`Etherscan fetch failed for ${address}:`, error);
+                    return null;
+                }
+            }
+            
+            // Fetch ETH price
+            async function fetchETHPrice() {
+                try {
+                    // Try CoinGecko first
+                    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+                    const data = await response.json();
+                    
+                    if (data.ethereum && data.ethereum.usd) {
+                        return data.ethereum.usd;
+                    } else {
+                        throw new Error('CoinGecko price data unavailable');
+                    }
+                } catch (error) {
+                    console.warn('CoinGecko failed, trying alternative price API...');
+                    
+                    // Fallback to CoinCap API
+                    const fallbackResponse = await fetch('https://api.coincap.io/v2/assets/ethereum');
+                    const fallbackData = await fallbackResponse.json();
+                    
+                    if (fallbackData.data && fallbackData.data.priceUsd) {
+                        return parseFloat(fallbackData.data.priceUsd);
+                    } else {
+                        // Default fallback price
+                        console.warn('All price APIs failed, using default price');
+                        return 3000; // Default ETH price
+                    }
+                }
+            }
+            
+            // Calculate and display totals
+            function calculateTotals() {
+                let totalETH = 0;
+                let allLoaded = true;
+                
+                addresses.forEach(addr => {
+                    if (addr.currentBalance !== undefined) {
+                        totalETH += addr.currentBalance;
+                    } else {
+                        allLoaded = false;
+                    }
+                });
+                
+                if (allLoaded) {
+                    totalBalanceElement.textContent = totalETH.toFixed(6);
+                    const totalUSD = totalETH * ethPrice;
+                    totalUsdElement.textContent = `$${totalUSD.toFixed(2)} USD`;
+                }
+            }
+            
+            // Fetch all balances on page load
+            fetchAllBalances();
+            
+            // Add event listener to refresh button
+            refreshButton.addEventListener('click', fetchAllBalances);
+            
+            // Auto-refresh every 60 seconds
+            setInterval(fetchAllBalances, 60000);
+        });
+    </script>
+</body>
+</html>
